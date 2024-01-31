@@ -25,30 +25,19 @@ router.post("/transfer",authMiddleware,async function(req,res){
         userId:req.userId
     }).session(session);
 
-    const object=zod.object({
-        to:zod.string(),
-        amount:zod.number()
-    });
+    const amount=req.body.amount;
+    const to=req.body.id;
 
-    const {amount,to}=req.body;
-
-    const result=object.safeParse({amount,to});
-
-    if(!result.success){
-        await session.abortTransaction();
-        return res.status(400).json({
-            message:"Invalid Inputs"
-        });
-    }
-
-    if(!account||account.balance<amount){
+    if(!account||parseFloat(account.balance)<amount){
         await session.abortTransaction();
         return res.status(400).json({
             message:"Insufficient Balance"
         }); 
     }
 
-    const toaccount=await Account.findById(to).session(session);
+    const toaccount=await Account.findOne({
+        userId:to
+    }).session(session);
 
     if(!toaccount){
         await session.abortTransaction();

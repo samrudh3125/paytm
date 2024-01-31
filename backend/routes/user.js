@@ -3,7 +3,6 @@ const zod=require("zod");
 const jwt=require("jsonwebtoken");
 const JWT_SECRET = require("../config");
 const { User, Account } = require("../db");
-const { authMiddleware } = require("../middleware");
 
 const router=express.Router();
 
@@ -16,14 +15,13 @@ const userSchema=zod.object({
 
 router.get("/bulk",async function(req,res){
     const filter=req.query.filter||"";
-
     const users=await User.find({
         $or:[{
-            firstname:{
+            firstName:{
                 "$regex":filter
             }
         },{
-            lastname:{
+            lastName:{
                 "$regex":filter
             }
         }]        
@@ -32,33 +30,11 @@ router.get("/bulk",async function(req,res){
     res.json({
         users:users.map(user=>({
             username:user.username,
-            firstName:user.firstname,
-            lastName:user.lastname,
+            firstName:user.firstName,
+            lastName:user.lastName,
             _id:user._id
         }))
     })
-})
-
-router.put("/",authMiddleware,async function(req,res){
-    const input=req.body;
-
-    const object=zod.object({
-        password:zod.string().optional(),
-        firstName:zod.string().optional(),
-        lastName:zod.string().optional(),
-    })
-
-    const result=object.safeParse(input);
-
-    if(!result.success){
-        res.status(411).send("Error while updating");
-    }
-
-    const user=await User.updateOne(input,{
-        id:req.userId
-    });
-
-    res.status(200).send("user updtated successfully");
 })
 
 router.post("/signup",async function(req,res){
